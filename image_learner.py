@@ -3,6 +3,7 @@ from abc import ABC
 from pathlib import Path
 from typing import Tuple, Any, List
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import tensorflow as tf
@@ -73,7 +74,11 @@ class BaseLearner(ABC):
         dataset = getattr(self.data, mode)
         return self.model.evaluate(dataset.data, steps=dataset.steps, verbose=verbose)
 
-    def analyze_dataset(self, mode: str = 'validation', verbose: int = 0) -> pd.DataFrame:
+    def analyze_dataset(
+            self,
+            mode: str = 'validation',
+            verbose: int = 0
+    ) -> pd.DataFrame:
         dataset: ImageDataset = getattr(self.data, mode)
         image_dataset = tf.data.Dataset.from_tensor_slices(dataset.x)
 
@@ -103,6 +108,26 @@ class BaseLearner(ABC):
                 "pred_probs": probs[:, pred_code][np.eye(len(pred_code), dtype=bool)],
             }
         )
+
+    def show_predictions(
+            self,
+            mode: str = "validation",
+            correct: bool = False,
+            ascending: bool = True,
+            cols: int = 8,
+            rows: int = 2,
+    ):
+        df = self.analyze_dataset(mode=mode, verbose=1)
+        df = df[(df.label == df.pred) if correct else (df.label != df.pred)]
+        df.sort_values(by=["label_probs"], ascending=ascending, inplace=True)
+        _, ax = plt.subplots(rows, cols, figsize=(3 * cols, 3.5 * rows))
+        for i, row in enumerate(df.head(cols * rows).itertuples()):
+            idx = (i // cols, i % cols) if rows > 1 else i % cols
+            ax[idx].axis("off")
+            ax[idx].imshow(row.image)
+            ax[idx].set_title(
+                f"{row.label}:{row.pred}\n{row.label_probs:.4f}:{row.pred_probs:.4f}"
+            )
 
 
 class ImageLearner(BaseLearner):
