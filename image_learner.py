@@ -5,9 +5,10 @@ from typing import Tuple, Any, List
 
 import numpy as np
 import pandas as pd
+import tensorflow as tf
 from tensorflow import keras
 
-from data import DataContainer
+from data import DataContainer, ImageDataset
 
 
 class BaseLearner(ABC):
@@ -71,6 +72,31 @@ class BaseLearner(ABC):
     def evaluate_dataset(self, mode: str = 'validation', verbose: int = 0) -> np.ndarray:
         dataset = getattr(self.data, mode)
         return self.model.evaluate(dataset.data, steps=dataset.steps, verbose=verbose)
+
+    def analyze_dataset(self, mode: str = 'validation', verbose: int = 0) -> pd.DataFrame:
+        dataset: ImageDataset = getattr(self.data, mode)
+        image_dataset = tf.data.Dataset.from_tensor_slices(dataset.x).batch(1)
+        images = [
+            img[0].numpy() for img in image_dataset.take(dataset.steps * dataset.config.batch_size)
+        ]
+
+        probs = self.model.predict(image_dataset, verbose=verbose)
+        pred_code = probs.argmax(axis=1)
+        label_code = [dataset.label_map[label] for label in dataset.y]
+        inverse_label_map = {value: key for key, value in dataset.label_map.items()}
+        pred = [inverse_label_map[x] for x in pred_code]
+        return pd.DataFrame.from_dict(
+            {
+                "path": dataset.x,
+                "image": images,
+                "label": dataset.y,
+                "label_code": label_code,
+                "pred": pred,
+                "pred_code": pred_code,
+                "label_probs": probs[:, label_code][np.eye(len(dataset.y), dtype=bool)],
+                "pred_probs": probs[:, pred_code][np.eye(len(pred_code), dtype=bool)],
+            }
+        )
 
 
 class ImageLearner(BaseLearner):
