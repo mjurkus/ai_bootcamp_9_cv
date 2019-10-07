@@ -24,13 +24,16 @@ class ImageParser(ImageTransformation):
         return tf.image.convert_image_dtype(image, tf.float32)
 
 
-class ImageRotationTransformation(ImageTransformation):
-
-    def __init__(self, image_dimensions: Tuple[int, int, int]):
-        self.image_dimensions = image_dimensions
+class ImageLRFlpTransformation(ImageTransformation):
 
     def transform(self, image: tf.Tensor) -> tf.Tensor:
-        return tf.image.resize(image, self.image_dimensions[:-1])
+        return tf.image.flip_left_right(image)
+
+
+class ImageUDFlpTransformation(ImageTransformation):
+
+    def transform(self, image: tf.Tensor) -> tf.Tensor:
+        return tf.image.flip_up_down(image)
 
 
 class CropTransformation(ImageTransformation, ABC):
