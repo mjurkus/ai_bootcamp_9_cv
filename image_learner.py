@@ -75,12 +75,18 @@ class BaseLearner(ABC):
 
     def analyze_dataset(self, mode: str = 'validation', verbose: int = 0) -> pd.DataFrame:
         dataset: ImageDataset = getattr(self.data, mode)
-        image_dataset = tf.data.Dataset.from_tensor_slices(dataset.x).batch(1)
+        image_dataset = tf.data.Dataset.from_tensor_slices(dataset.x)
+
+        for fun in dataset.config.preprocess_pipeline:
+            image_dataset = image_dataset.map(fun, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+
+        image_dataset = image_dataset.batch(1).prefetch(tf.data.experimental.AUTOTUNE)
+
+        probs = self.model.predict(image_dataset, verbose=verbose)
         images = [
             img[0].numpy() for img in image_dataset.take(dataset.steps * dataset.config.batch_size)
         ]
 
-        probs = self.model.predict(image_dataset, verbose=verbose)
         pred_code = probs.argmax(axis=1)
         label_code = [dataset.label_map[label] for label in dataset.y]
         inverse_label_map = {value: key for key, value in dataset.label_map.items()}
