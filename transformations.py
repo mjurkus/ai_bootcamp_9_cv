@@ -27,13 +27,13 @@ class ImageParser(ImageTransformation):
 class ImageLRFlpTransformation(ImageTransformation):
 
     def transform(self, image: tf.Tensor) -> tf.Tensor:
-        return tf.image.flip_left_right(image)
+        return tf.image.random_flip_left_right(image)
 
 
 class ImageUDFlpTransformation(ImageTransformation):
 
     def transform(self, image: tf.Tensor) -> tf.Tensor:
-        return tf.image.flip_up_down(image)
+        return tf.image.random_flip_up_down(image)
 
 
 class CropTransformation(ImageTransformation, ABC):
