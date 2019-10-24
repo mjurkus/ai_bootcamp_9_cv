@@ -159,13 +159,13 @@ class ImageLearner(BaseLearner):
         self.l2 = l2
 
         self.base_model = base_model(include_top=False, input_shape=input_shape)
-        x = keras.layers.concatenate(
+        self.concat_layer = keras.layers.concatenate(
             [
                 keras.layers.GlobalAvgPool2D()(self.base_model.output),
                 keras.layers.GlobalMaxPool2D()(self.base_model.output),
             ]
         )
-        x = keras.layers.BatchNormalization()(x)
+        x = keras.layers.BatchNormalization()(self.concat_layer)
         x = keras.layers.Dropout(dropout)(x)
         x = keras.layers.Dense(
             self.n_classes,
